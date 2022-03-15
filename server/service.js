@@ -1,6 +1,6 @@
 import fs from 'fs'
 import config from './config.js'
-import { join } from 'path'
+import { join, extname } from 'path'
 import fsPromises from 'fs/promises'
 
 const {
@@ -17,8 +17,9 @@ export class Service {
 
 
     async getFileInfo(file) {
-        const fullFilePath = join(publicDirectory, file)
         //file = home/index.html
+        const fullFilePath = join(publicDirectory, file)
+        // valida se existe, se não existe estoura erro!!
         await fsPromises.access(fullFilePath)
         const fileType = extname(fullFilePath)
         return {

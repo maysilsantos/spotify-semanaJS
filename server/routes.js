@@ -5,6 +5,9 @@ const {
     location,
     pages: {
         homeHTML
+    },
+    constants: {
+        CONTENT_TYPE
     }
 } = config
 
@@ -18,7 +21,7 @@ async function routes(request, response) {
             'Location': config.location.home
         })
 
-        response.end()
+        return response.end()
     }
 
     if(method === 'GET' && url === '/home') {
@@ -27,17 +30,52 @@ async function routes(request, response) {
         } = await controller.getFileStream(homeHTML)
 
         // padrão do response é text/html
-        response.writeHead(200, {
-            'Content-Type': 'text/html'
-        })        
+        // response.writeHead(200, {
+        //     'Content-Type': 'text/html'
+        // })        
         return stream.pipe(response)
     }
 
+
+    if(method === 'GET' && url === '/controller') {
+        const {
+            stream
+        } = await controller.getFileStream(controllerHTML)
+        return stream.pipe(response)
+    }
+
+    //files
+    if(method === 'GET') {
+        const {
+            stream,
+            type
+        } = await controller.getFileStream(url)
+        const contentType = CONTENT_TYPE[type]
+        if(contentType) {
+            response.writeHead(200, {
+                'Content-Type': contentType
+            })
+        }
+        return stream.pipe(response)
+    }
+
+    response.writeHead(404)
     return response.end('hello')
 }
 
+function handleError(error, response) {
+    if( error.messages.includes('ENOENT')){
+        logger.warn(`asset not found ${error.stack}`)
+        response.writeHead(404)
+        return response.end()
+    }
+
+    logger.error(`caught error on API ${error.stack}`)
+    response.writeHead(500)
+    return response.end()
+}
 
 export function handler(request, response) {
     return routes(request, response)
-    .catch( error => logger.error(`Deu ruimmm: ${error.stack}`))
+    .catch( error => handleError(error, response))
 }
